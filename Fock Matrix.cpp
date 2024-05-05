@@ -5,11 +5,18 @@
 #include "Fock Matrix.h"
 
 
-double density(double x, double y, double z, arma::mat &C, const std::vector<PB_wavefunction> &basis) {
+double density(double x, double y, double z, arma::mat &C, const std::vector<PB_wavefunction> &basis, int num_electrons) {
 
     double sum=0;
 
-    for (int u=0; u < C.n_rows; u++) { // each row is an "AO" = basis function in C matrix
+    for (int i=0; i < num_electrons; i++) { // each column is an "MO" in C matrix
+        for (int u=0; u < C.n_rows; u++) { // each row is an "AO" = basis function in C matrix
+            double wavefunc_val = PB_func(x,y,z,basis[u]);
+            sum += pow(C(u,i)*wavefunc_val,2);
+        }
+    }
+
+    for (int u=0; u < C.n_rows; u++) {
         for (int v=0; v < C.n_cols; v++) { // each column is an "MO" in C matrix
             double wavefunc_val = PB_func(x,y,z,basis[u]);
             sum += pow(C(u,v)*wavefunc_val,2);
@@ -20,8 +27,8 @@ double density(double x, double y, double z, arma::mat &C, const std::vector<PB_
 
 
 
-double V_xc(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L) {
-    return -pow((3 / M_PI)*density(x,y,z,C,basis), 1/3.0);
+double V_xc(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons) {
+    return -pow((3 / M_PI)*density(x,y,z,C,basis,num_electrons), 1/3.0);
 }
 
 
@@ -48,7 +55,7 @@ arma::vec C_V_ext(const std::vector<PB_wavefunction> &basis, const std::vector<A
 }
 
 
-double V_ext(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L) {
+double V_ext(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons) {
 
     // First make a armadillo vector of values of the wavefunctions at the specified coordinate
     arma::vec w_vals_vec(basis.size(), arma::fill::zeros);
@@ -63,7 +70,7 @@ double V_ext(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::
 
 
 // A function to get the coefficients for each basis function for the Hartree potential
-arma::vec C_V_hartree(const std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, arma::mat &C, int Ng, double L) {
+arma::vec C_V_hartree(const std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, arma::mat &C, int Ng, double L, int num_electrons) {
 
     arma::vec C_vec(basis.size(), arma::fill::zeros);
 
@@ -73,7 +80,7 @@ arma::vec C_V_hartree(const std::vector<PB_wavefunction> &basis, const std::vect
         // Now do numerical integration, first making a lambda function to input to quadrature integrator function
         auto f = [&](double x, double y, double z) {
             double term1 = PB_func(x,y,z,w);
-            double term2 = density(x,y,z,C,basis);
+            double term2 = density(x,y,z,C,basis,num_electrons);
             return term1*term2;
         };
         double numerical_int = quad_3D_grid_integration(f, Ng, L);
@@ -86,7 +93,7 @@ arma::vec C_V_hartree(const std::vector<PB_wavefunction> &basis, const std::vect
 }
 
 
-double V_hartree(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L) {
+double V_hartree(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons) {
     // First make a armadillo vector of values of the wavefunctions at the specified coordinate
     arma::vec w_vals_vec(basis.size(), arma::fill::zeros);
     for (int i=0; i < basis.size(); i++) {
@@ -94,14 +101,13 @@ double V_hartree(double x, double y, double z, arma::mat &C, arma::vec &C_vec, s
         w_vals_vec[i] = PB_func(x,y,z,w);
     }
 
-
     return arma::accu(C_vec % w_vals_vec);
 }
 
 
 
 // General function to construct any potential energy matrix for any PE function that depends on a coef matrix and a basis
-arma::mat construct_V_mat(std::function<double(double, double, double, arma::mat&, arma::vec&, std::vector<PB_wavefunction>&, const std::vector<Atom>&, double, double)> V, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L) {
+arma::mat construct_V_mat(std::function<double(double, double, double, arma::mat&, arma::vec&, std::vector<PB_wavefunction>&, const std::vector<Atom>&, int, double, int)> V, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons) {
     int matrix_size = basis.size();
 
     // Initialize a sparse matrix of the appropriate size, just filled with zeroes
@@ -117,7 +123,7 @@ arma::mat construct_V_mat(std::function<double(double, double, double, arma::mat
             // Create a function that you can plug in to numerical integration code from before!
             auto f = [&](double x, double y, double z) {
                 double term1 = PB_func(x,y,z,w_u);
-                double term2 = V(x,y,z,C,C_vec,basis,atoms,Ng,L);
+                double term2 = V(x,y,z,C,C_vec,basis,atoms,Ng,L,num_electrons);
                 double term3 = PB_func(x,y,z,w_v);
                 return term1*term2*term3;
             };
@@ -131,13 +137,25 @@ arma::mat construct_V_mat(std::function<double(double, double, double, arma::mat
 }
 
 
-arma::mat construct_Fock_matrix(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec, const std::vector<Atom> &atoms, int Ng, double L) {
+arma::mat construct_Fock_matrix(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons) {
 
     arma::sp_mat T_mat = construct_T(basis);
-    arma::mat V_hartree_mat = construct_V_mat(V_hartree, C, C_vec, basis, atoms, Ng, L);
-    arma::mat V_ext_mat = construct_V_mat(V_ext, C, C_vec, basis, atoms, Ng, L);
-    arma::mat V_xc_mat = construct_V_mat(V_xc, C, C_vec, basis, atoms, Ng, L);
+    arma::mat V_hartree_mat = construct_V_mat(V_hartree, C, C_vec_hartree, basis, atoms, Ng, L, num_electrons);
+    arma::mat V_ext_mat = construct_V_mat(V_ext, C, C_vec_ext, basis, atoms, Ng, L, num_electrons);
+    arma::mat V_xc_mat = construct_V_mat(V_xc, C, C_vec_hartree, basis, atoms, Ng, L, num_electrons);
 
     return T_mat + V_hartree_mat + V_ext_mat + V_xc_mat;
+
+}
+
+
+
+// Other, simpler ways to make fock matrix
+arma::mat construct_Fmat_Vext_only(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons) {
+
+    arma::sp_mat T_mat = construct_T(basis);
+    arma::mat V_ext_mat = construct_V_mat(V_ext, C, C_vec_ext, basis, atoms, Ng, L, num_electrons);
+
+    return T_mat + V_ext_mat;
 
 }

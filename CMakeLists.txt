@@ -16,7 +16,9 @@ add_executable(HW6
         "Numerical Integration.h"
         "Numerical Integration.cpp"
         Diagonalize_Converge.cpp
-        Diagonalize_Converge.h)
+        Diagonalize_Converge.h
+        Energy.cpp
+        Energy.h)
 
 include_directories(/Users/sahandadibnia/armadillo-12.6.7/include)
 
