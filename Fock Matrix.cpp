@@ -20,7 +20,7 @@ double density(double x, double y, double z, arma::mat &C, const std::vector<PB_
 
 
 
-double V_xc(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, double Ng, double L) {
+double V_xc(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L) {
     return -pow((3 / M_PI)*density(x,y,z,C,basis), 1/3.0);
 }
 
@@ -48,7 +48,7 @@ arma::vec C_V_ext(const std::vector<PB_wavefunction> &basis, const std::vector<A
 }
 
 
-double V_ext(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, double Ng, double L) {
+double V_ext(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L) {
 
     // First make a armadillo vector of values of the wavefunctions at the specified coordinate
     arma::vec w_vals_vec(basis.size(), arma::fill::zeros);
@@ -63,7 +63,7 @@ double V_ext(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::
 
 
 // A function to get the coefficients for each basis function for the Hartree potential
-arma::vec C_V_hartree(const std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, arma::mat &C, double Ng, double L) {
+arma::vec C_V_hartree(const std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, arma::mat &C, int Ng, double L) {
 
     arma::vec C_vec(basis.size(), arma::fill::zeros);
 
@@ -86,7 +86,7 @@ arma::vec C_V_hartree(const std::vector<PB_wavefunction> &basis, const std::vect
 }
 
 
-double V_hartree(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, double Ng, double L) {
+double V_hartree(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L) {
     // First make a armadillo vector of values of the wavefunctions at the specified coordinate
     arma::vec w_vals_vec(basis.size(), arma::fill::zeros);
     for (int i=0; i < basis.size(); i++) {
@@ -101,7 +101,7 @@ double V_hartree(double x, double y, double z, arma::mat &C, arma::vec &C_vec, s
 
 
 // General function to construct any potential energy matrix for any PE function that depends on a coef matrix and a basis
-arma::mat construct_V_mat(std::function<double(double, double, double, arma::mat&, arma::vec&, std::vector<PB_wavefunction>&, const std::vector<Atom>&, double, double)> V, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, double Ng, double L) {
+arma::mat construct_V_mat(std::function<double(double, double, double, arma::mat&, arma::vec&, std::vector<PB_wavefunction>&, const std::vector<Atom>&, double, double)> V, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L) {
     int matrix_size = basis.size();
 
     // Initialize a sparse matrix of the appropriate size, just filled with zeroes
@@ -131,7 +131,7 @@ arma::mat construct_V_mat(std::function<double(double, double, double, arma::mat
 }
 
 
-arma::mat construct_Fock_matrix(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec, const std::vector<Atom> &atoms, double Ng, double L) {
+arma::mat construct_Fock_matrix(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec, const std::vector<Atom> &atoms, int Ng, double L) {
 
     arma::sp_mat T_mat = construct_T(basis);
     arma::mat V_hartree_mat = construct_V_mat(V_hartree, C, C_vec, basis, atoms, Ng, L);

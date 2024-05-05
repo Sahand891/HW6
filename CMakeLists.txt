@@ -14,7 +14,9 @@ add_executable(HW6
         "Fock Matrix.cpp"
         "Fock Matrix.h"
         "Numerical Integration.h"
-        "Numerical Integration.cpp")
+        "Numerical Integration.cpp"
+        Diagonalize_Converge.cpp
+        Diagonalize_Converge.h)
 
 include_directories(/Users/sahandadibnia/armadillo-12.6.7/include)
 
