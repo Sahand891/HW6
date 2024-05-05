@@ -4,7 +4,7 @@
 
 #include "basis.h"
 
-double PB_func(double x, double y, double z, PB_wavefunction w) {
+double PB_func(double x, double y, double z, const PB_wavefunction &w) {
 
     int n_x = w.n_x;
     int n_y = w.n_y;
@@ -18,4 +18,3 @@ double PB_func(double x, double y, double z, PB_wavefunction w) {
 
     return normalization*x_val*y_val*z_val;
 }
-

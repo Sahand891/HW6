@@ -32,3 +32,21 @@ std::vector<PB_wavefunction> construct_basis(double E_cutoff, double L) {
 
     return final_vec;
 }
+
+
+// Use a sparse matrix since it's diagonal
+arma::sp_mat construct_T(std::vector<PB_wavefunction> &basis) {
+
+    int matrix_size = basis.size();
+
+    // Initialize a sparse matrix of the appropriate size, just filled with zeroes
+    arma::sp_mat T(matrix_size, matrix_size);
+
+    // Iterate through diagonal matrix elements, computing appropriate kinetic energy
+    for (size_t i = 0; i < matrix_size; i++) {
+        PB_wavefunction w = basis[i];
+        T(i, i) = T_diagonal_component(w);
+    }
+
+    return T;
+}

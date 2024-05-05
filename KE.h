@@ -15,6 +15,6 @@
 
 double T_diagonal_component(PB_wavefunction w);
 std::vector<PB_wavefunction> construct_basis(double E_cutoff, double L);
-
+arma::sp_mat construct_T(std::vector<PB_wavefunction> &basis);
 
 #endif //HW6_KE_H

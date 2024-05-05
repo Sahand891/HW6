@@ -17,9 +17,21 @@ struct PB_wavefunction {
     double L;
 
     arma::vec n = {n_x, n_y, n_z};
+    double n_sq = pow(arma::norm(n),2);
 };
 
-double PB_func(double x, double y, double z, PB_wavefunction w);
+struct Atom {
+    // General atom data type
+
+    double X,Y,Z;
+    int Z_; // atomic number = nuclear charge
+
+    // position vector
+    arma::vec pos_vec = {X,Y,Z};
+
+};
+
+double PB_func(double x, double y, double z, const PB_wavefunction &w);
 
 
 #endif //HW6_BASIS_H

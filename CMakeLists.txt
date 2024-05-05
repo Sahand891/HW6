@@ -3,12 +3,18 @@ project(HW6)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(HW6 main.cpp
+include_directories(.)
+
+add_executable(HW6
+        main.cpp
         basis.cpp
         basis.h
         KE.cpp
         KE.h
-        KE.h)
+        "Fock Matrix.cpp"
+        "Fock Matrix.h"
+        "Numerical Integration.h"
+        "Numerical Integration.cpp")
 
 include_directories(/Users/sahandadibnia/armadillo-12.6.7/include)
 
