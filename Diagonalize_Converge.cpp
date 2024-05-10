@@ -14,7 +14,7 @@ arma::mat find_MO_coefs(arma::mat &F) {
 
 
 // Force both alpha and beta electrons to have the same "first guess" coefficient matrix
-iteration_data initialize_DFT(const std::vector<PB_wavefunction> &basis, int Ng, double L, const std::vector<Atom> &atoms, int p, int q, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, arma::mat& C_guess, arma::mat& F_initial) {
+iteration_data initialize_DFT(const std::vector<PB_wavefunction> &basis, int Ng, double L, const std::vector<Atom> &atoms, int p, int q, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, arma::mat& C_guess, arma::mat& F_initial, arma::mat &grid, arma::mat &whole_grid_basis) {
 
     // Obtain the new guesses for the coefficient matrix based on the calculated Fock matrix ... same for alpha and beta
     arma::mat C_new = find_MO_coefs(F_initial);
@@ -22,6 +22,8 @@ iteration_data initialize_DFT(const std::vector<PB_wavefunction> &basis, int Ng,
     iteration_data it_data = {basis,
                               Ng,
                               L,
+                              grid,
+                              whole_grid_basis,
                               atoms,
                               p,
                               q,
@@ -42,7 +44,7 @@ iteration_data initialize_DFT(const std::vector<PB_wavefunction> &basis, int Ng,
 
 
 // Note to self: the differentiator between alpha and beta electrons comes from the exchange/correlation matrix, which is dependent on the densities!
-std::vector<iteration_data> converge_DFT(const iteration_data &it_data, std::vector<iteration_data> &it_data_vec, std::function<arma::mat(std::vector<PB_wavefunction>&, arma::mat&, arma::vec&, arma::vec&, const std::vector<Atom>&, int, double, int)>& F_func) {
+std::vector<iteration_data> converge_DFT(const iteration_data &it_data, std::vector<iteration_data> &it_data_vec, std::function<arma::mat(std::vector<PB_wavefunction>&, arma::mat&, arma::vec&, arma::vec&, const std::vector<Atom>&, int, double, int, arma::mat&, arma::mat&)>& F_func) {
 
     // Base case
     if (it_data.converged) {
@@ -53,6 +55,8 @@ std::vector<iteration_data> converge_DFT(const iteration_data &it_data, std::vec
     std::vector<PB_wavefunction> basis = it_data.basis;
     int Ng = it_data.Ng;
     double L = it_data.L;
+    arma::mat grid = it_data.grid;
+    arma::mat whole_grid_basis = it_data.whole_grid_basis;
     std::vector<Atom> atoms = it_data.atoms;
     int p = it_data.p;
     int q = it_data.q;
@@ -66,8 +70,8 @@ std::vector<iteration_data> converge_DFT(const iteration_data &it_data, std::vec
 
 
     // Make the new fock matrix based on the coefficient matrices from the previous iteration
-    arma::mat Fock_alpha = F_func(basis, C_alpha_old, C_vec_hartree, C_vec_ext, atoms, Ng, L, p);
-    arma::mat Fock_beta = F_func(basis, C_alpha_old, C_vec_hartree, C_vec_ext, atoms, Ng, L, q);
+    arma::mat Fock_alpha = F_func(basis, C_alpha_old, C_vec_hartree, C_vec_ext, atoms, Ng, L, p, grid, whole_grid_basis);
+    arma::mat Fock_beta = F_func(basis, C_alpha_old, C_vec_hartree, C_vec_ext, atoms, Ng, L, q, grid, whole_grid_basis);
 
 
     // Diagonalize the fock matrices and extra MO coefficients
@@ -79,6 +83,8 @@ std::vector<iteration_data> converge_DFT(const iteration_data &it_data, std::vec
     iteration_data new_it_data = {basis,
                                   Ng,
                                   L,
+                                  grid,
+                                  whole_grid_basis,
                                   atoms,
                                   p,
                                   q,

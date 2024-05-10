@@ -22,6 +22,8 @@ struct iteration_data {
     std::vector<PB_wavefunction> basis;
     int Ng;
     double L;
+    arma::mat grid;
+    arma::mat whole_grid_basis;
     std::vector<Atom> atoms;
     int p;
     int q;
@@ -54,8 +56,9 @@ struct iteration_data {
 
 arma::mat find_MO_coefs(arma::mat &F);
 
-iteration_data initialize_DFT(const std::vector<PB_wavefunction> &basis, int Ng, double L, const std::vector<Atom> &atoms, int p, int q, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, arma::mat& C_guess, arma::mat& F_initial);
-std::vector<iteration_data> converge_DFT(const iteration_data &it_data, std::vector<iteration_data> &it_data_vec, std::function<arma::mat(std::vector<PB_wavefunction>&, arma::mat&, arma::vec&, arma::vec&, const std::vector<Atom>&, int, double, int)>& F_func);
+iteration_data initialize_DFT(const std::vector<PB_wavefunction> &basis, int Ng, double L, const std::vector<Atom> &atoms, int p, int q, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, arma::mat& C_guess, arma::mat& F_initial, arma::mat &grid, arma::mat &whole_grid_basis);
+std::vector<iteration_data> converge_DFT(const iteration_data &it_data, std::vector<iteration_data> &it_data_vec, std::function<arma::mat(std::vector<PB_wavefunction>&, arma::mat&, arma::vec&, arma::vec&, const std::vector<Atom>&, int, double, int, arma::mat&, arma::mat&)>& F_func);
+
 
 iteration_data obtain_converged_data(std::vector<iteration_data> &converged_it_data);
 

@@ -133,13 +133,30 @@ arma::mat construct_V_mat_slow(std::function<double(double, double, double, arma
 
 
 
-arma::mat construct_V_mat_fast(std::vector<PB_wavefunction> &basis) {
-
-    int matrix_size = basis.size();
+arma::mat construct_V_mat_fast(std::function<double(double, double, double, arma::mat&, arma::vec&, std::vector<PB_wavefunction>&, const std::vector<Atom>&, int, double, int)> V, arma::mat &C, arma::vec &C_vec, std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons, arma::mat &grid, arma::mat &whole_basis_grid) {
 
     // Initialize a matrix of the appropriate size, just filled with zeroes
-    arma::mat V_mat(matrix_size, matrix_size, arma::fill::zeros);
+    arma::mat V_mat(basis.size(), basis.size(), arma::fill::zeros);
 
+
+    auto f = [&](double x, double y, double z) {
+        return V(x,y,z,C,C_vec,basis,atoms,Ng,L,num_electrons);
+    };
+
+    // Evaluate potential energy function at gridpoints
+    arma::vec V_at_grid = customf_at_gridpoints(grid, f, Ng);
+
+    // 5th step: Now take every combination of columns in the whole_basis_at_grid matrix, "inner-product" them element-wise by the V_ext_at_grid vector
+    for (int i=0; i < whole_basis_grid.n_cols; i++) {
+        for (int j=0; j < whole_basis_grid.n_cols; j++) {
+            arma::vec bf_vec_1 = whole_basis_grid.col(i);
+            arma::vec bf_vec_2 = whole_basis_grid.col(j);
+            arma::vec inner_prod_at_grid = bf_vec_1 % V_at_grid % bf_vec_2;
+            V_mat(i,j) = arma::accu(inner_prod_at_grid) * pow((L / Ng), 3);
+        }
+    }
+
+    return V_mat;
 
 }
 
@@ -147,12 +164,15 @@ arma::mat construct_V_mat_fast(std::vector<PB_wavefunction> &basis) {
 
 
 
-arma::mat construct_Fock_matrix(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons) {
+
+
+
+arma::mat construct_Fock_matrix(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons, arma::mat &grid, arma::mat &whole_basis_grid) {
 
     arma::sp_mat T_mat = construct_T(basis);
-    arma::mat V_hartree_mat = construct_V_mat_slow(V_hartree, C, C_vec_hartree, basis, atoms, Ng, L, num_electrons);
-    arma::mat V_ext_mat = construct_V_mat_slow(V_ext, C, C_vec_ext, basis, atoms, Ng, L, num_electrons);
-    arma::mat V_xc_mat = construct_V_mat_slow(V_xc, C, C_vec_hartree, basis, atoms, Ng, L, num_electrons);
+    arma::mat V_hartree_mat = construct_V_mat_fast(V_hartree, C, C_vec_hartree, basis, atoms, Ng, L, num_electrons, grid, whole_basis_grid);
+    arma::mat V_ext_mat = construct_V_mat_fast(V_ext, C, C_vec_ext, basis, atoms, Ng, L, num_electrons, grid, whole_basis_grid);
+    arma::mat V_xc_mat = construct_V_mat_fast(V_xc, C, C_vec_hartree, basis, atoms, Ng, L, num_electrons, grid, whole_basis_grid);
 
     return T_mat + V_hartree_mat + V_ext_mat + V_xc_mat;
 
@@ -161,10 +181,10 @@ arma::mat construct_Fock_matrix(std::vector<PB_wavefunction> &basis, arma::mat &
 
 
 // Other, simpler ways to make fock matrix
-arma::mat construct_Fmat_Vext_only(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons) {
+arma::mat construct_Fmat_Vext_only(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons, arma::mat &grid, arma::mat &whole_basis_grid) {
 
     arma::sp_mat T_mat = construct_T(basis);
-    arma::mat V_ext_mat = construct_V_mat_slow(V_ext, C, C_vec_ext, basis, atoms, Ng, L, num_electrons);
+    arma::mat V_ext_mat = construct_V_mat_fast(V_ext, C, C_vec_ext, basis, atoms, Ng, L, num_electrons, grid, whole_basis_grid);
 
     return T_mat + V_ext_mat;
 
