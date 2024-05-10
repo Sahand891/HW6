@@ -4,7 +4,7 @@
 
 #include "KE.h"
 
-double T_diagonal_component(PB_wavefunction w) {
+double T_diagonal_component(const PB_wavefunction &w) {
     return 0.5 * pow((M_PI * arma::norm(w.n) / w.L), 2);
 }
 
@@ -21,6 +21,28 @@ std::vector<PB_wavefunction> construct_basis(double E_cutoff, double L) {
     for (double x=1; x < 100; x++) {
         for (double y=1; y < 100; y++) {
             for (double z=1; z < 100; z++) {
+                PB_wavefunction w = {x, y, z, L};
+                T = T_diagonal_component(w);
+                if (T <= E_cutoff) {
+                    final_vec.push_back(w);
+                }
+            }
+        }
+    }
+
+    return final_vec;
+}
+
+
+std::vector<PB_wavefunction> construct_atom_basis(double E_cutoff, double L) {
+
+    std::vector<PB_wavefunction> final_vec;
+    double T=0;
+
+    // Only uses odd quantum numbers
+    for (double x=1; x < 100; x += 2) {
+        for (double y=1; y < 100; y += 2) {
+            for (double z=1; z < 100; z += 2) {
                 PB_wavefunction w = {x, y, z, L};
                 T = T_diagonal_component(w);
                 if (T <= E_cutoff) {

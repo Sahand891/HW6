@@ -13,8 +13,9 @@
 #ifndef HW6_KE_H
 #define HW6_KE_H
 
-double T_diagonal_component(PB_wavefunction w);
+double T_diagonal_component(const PB_wavefunction &w);
 std::vector<PB_wavefunction> construct_basis(double E_cutoff, double L);
+std::vector<PB_wavefunction> construct_atom_basis(double E_cutoff, double L);
 arma::sp_mat construct_T(std::vector<PB_wavefunction> &basis);
 
 #endif //HW6_KE_H

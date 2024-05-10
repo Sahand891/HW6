@@ -36,7 +36,7 @@ double external_energy(const iteration_data &final_it_data) {
     arma::mat P_mat = P(C_alpha) + P(C_beta);
 
     // Note that V_ext doesn't *actually* use C! or even num_electrons, for that matter!
-    arma::mat V_ext_mat = construct_V_mat(V_ext, C_alpha, C_vec_ext, basis, atoms, Ng, L, p);
+    arma::mat V_ext_mat = construct_V_mat_slow(V_ext, C_alpha, C_vec_ext, basis, atoms, Ng, L, p);
 
     return arma::trace(P_mat*V_ext_mat);
 
@@ -60,8 +60,8 @@ double hartree_energy(const iteration_data &final_it_data) {
     arma::mat P_mat = P(C_alpha) + P(C_beta);
 
     // Note that V_hartree DOES *actually* use C AND num_electrons!!!
-    arma::mat V_hartree_mat_alpha = construct_V_mat(V_hartree, C_alpha, C_vec_hartree, basis, atoms, Ng, L, p);
-    arma::mat V_hartree_mat_beta = construct_V_mat(V_hartree, C_beta, C_vec_hartree, basis, atoms, Ng, L, q);
+    arma::mat V_hartree_mat_alpha = construct_V_mat_slow(V_hartree, C_alpha, C_vec_hartree, basis, atoms, Ng, L, p);
+    arma::mat V_hartree_mat_beta = construct_V_mat_slow(V_hartree, C_beta, C_vec_hartree, basis, atoms, Ng, L, q);
 
     return 0.5*arma::trace(P_mat*(V_hartree_mat_alpha+V_hartree_mat_beta));
 
