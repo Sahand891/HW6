@@ -47,10 +47,8 @@ struct iteration_data {
 
     int iteration_count;
 
-
-    // check for convergence just based on alpha coefficient matrix
-    bool converged = arma::approx_equal(C_alpha_new,C_alpha_old,"absdiff",1.14545);
-
+    // check for convergence will be based on alpha Fock matrices, NOT on the coefficients (see actual implementation) - this is important because by nature of this problem the matrices are ill-conditioned, so their eigenvectors will oscillate/not converge
+    bool converged;
 
 
     // Other information in case we need it
@@ -67,6 +65,7 @@ struct iteration_data {
     // Eigenvalues of these matrices
     arma::vec F_alpha_old_eigvals = find_eigenvalues(F_alpha_full_old);
     arma::vec F_alpha_new_eigvals = find_eigenvalues(F_alpha_full_new);
+
 
 };
 
