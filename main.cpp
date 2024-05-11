@@ -27,9 +27,11 @@ int main() {
     int H_q = 0;
 
 
-//    perform_DFT_V_ext_only("H", L, Ng, E_cutoff, H_atoms, H_p, H_q);
-//
-//    perform_full_DFT("H", L, Ng, E_cutoff, H_atoms, H_p, H_q);
+    perform_DFT_V_ext_only("H", L, Ng, E_cutoff, H_atoms, H_p, H_q);
+    perform_full_DFT("H", L, Ng, E_cutoff, H_atoms, H_p, H_q);
+
+
+
 
 
 
@@ -39,7 +41,7 @@ int main() {
     int He_p = 1;
     int He_q = 1;
 
-    //perform_DFT_V_ext_only("He", L, Ng, E_cutoff, He_atoms, He_p, He_q);
+    perform_DFT_V_ext_only("He", L, Ng, E_cutoff, He_atoms, He_p, He_q);
     perform_full_DFT("He", L, Ng, E_cutoff, He_atoms, He_p, He_q);
 
     return 0;
