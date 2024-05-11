@@ -1,0 +1,7 @@
+DFT code for calculating atom energies using LSDA functional.
+
+Explanation of the code:
+The short code written in main.cpp will run DFT on H and He atom in two ways: using just the kinetic and external potentials, and using all four of kinetic, external, Hartree, and exchange potentials (dubbed "full DFT"). It will print out the calculated energies. It will also print out the word "iteration" for every SCF iteration the code goes through before reaching convergence.
+
+An important note about convergence:
+To check for SCF convergence, I looked at the Fock matrices rather than the coefficient matrices. This is because, by nature of our basis (i.e., some basis functions having the exact same energy), the Fock matrices are prone to becoming ill-conditioned, and thus their eigenvectors (i.e., their coefficient matrices) had a few terms that changed substantially. In other words, the matrices themselves converged but their eigenvectors would not. To demonstrate that this did not affect the results of the SCF (in terms of energies at least), I included screenshots of full DFT code ran for He at different convergence tolerance levels (1e-1, 1e-4, 1e-8, 1e-10). It is clear that the total energy does not change substantially between changes in convergence level (if at all), but instead the other thing that changes is that with lower tolerance SCF goes through more iterations (as is to be expected). Therefore, checking for SCF convergence based on the Fock matrices seems to be a valid approach in this case.
