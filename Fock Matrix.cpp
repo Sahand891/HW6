@@ -4,19 +4,24 @@
 
 #include "Fock Matrix.h"
 
-
+// Density based on JUST ONE C matrix (alpha or beta)
 double density(double x, double y, double z, arma::mat &C, const std::vector<PB_wavefunction> &basis, int num_electrons) {
 
     double sum=0;
 
     for (int i=0; i < num_electrons; i++) { // each column is an "MO" in C matrix
-        for (int u=0; u < C.n_rows; u++) { // each row is an "AO" = basis function in C matrix
+        for (int u=0; u < basis.size(); u++) { // each row is an "AO" = basis function in C matrix
             double wavefunc_val = PB_func(x,y,z,basis[u]);
             sum += pow(C(u,i)*wavefunc_val,2);
         }
     }
 
     return sum;
+}
+
+// Density based on BOTH alpha and beta C matrices
+double total_density(double x, double y, double z, arma::mat &C_alpha, arma::mat &C_beta, const std::vector<PB_wavefunction> &basis, int p, int q) {
+    return density(x,y,z,C_alpha,basis,p) + density(x,y,z,C_beta,basis,q);
 }
 
 
@@ -64,23 +69,26 @@ double V_ext(double x, double y, double z, arma::mat &C, arma::vec &C_vec, std::
 
 
 // A function to get the coefficients for each basis function for the Hartree potential
-arma::vec C_V_hartree(const std::vector<PB_wavefunction> &basis, const std::vector<Atom> &atoms, arma::mat &C, int Ng, double L, int num_electrons) {
+// Currently this function is very slow, potentially because it's recalculating at every grid point?
+arma::vec C_V_hartree(const std::vector<PB_wavefunction> &basis, arma::mat &C_alpha, arma::mat &C_beta, int Ng, double L, int p, int q, arma::mat &grid, arma::mat &whole_basis_grid) {
 
     arma::vec C_vec(basis.size(), arma::fill::zeros);
 
+    auto f = [&](double x, double y, double z) {
+        return total_density(x,y,z,C_alpha,C_beta,basis,p,q);
+    };
 
-    for (int i=0; i < basis.size(); i++) {
-        PB_wavefunction w = basis[i];
-        // Now do numerical integration, first making a lambda function to input to quadrature integrator function
-        auto f = [&](double x, double y, double z) {
-            double term1 = PB_func(x,y,z,w);
-            double term2 = density(x,y,z,C,basis,num_electrons);
-            return term1*term2;
-        };
-        double numerical_int = quad_3D_grid_integration(f, Ng, L);
-        C_vec[i] = 4 * L*L * numerical_int / (M_PI * w.n_sq);
+    // Evaluate density at gridpoints
+    arma::vec density_at_grid = customf_at_gridpoints(grid, f, Ng);
+
+    // Go through every basis function
+    for (int basis_func_index=0; basis_func_index < basis.size(); basis_func_index++) { // going thru every basis function
+        PB_wavefunction w = basis[basis_func_index];
+        arma::vec bf_vec = whole_basis_grid.col(basis_func_index);
+        arma::vec prod_at_grid = bf_vec % density_at_grid;
+        double numerical_int = arma::accu(prod_at_grid) * pow((L / Ng), 3);
+        C_vec(basis_func_index) = 4 * L*L * numerical_int / (M_PI * w.n_sq);
     }
-
 
     return C_vec;
 
@@ -170,11 +178,11 @@ arma::mat construct_V_mat_fast(std::function<double(double, double, double, arma
 arma::mat construct_Fock_matrix(std::vector<PB_wavefunction> &basis, arma::mat &C, arma::vec &C_vec_hartree, arma::vec &C_vec_ext, const std::vector<Atom> &atoms, int Ng, double L, int num_electrons, arma::mat &grid, arma::mat &whole_basis_grid) {
 
     arma::sp_mat T_mat = construct_T(basis);
-    arma::mat V_hartree_mat = construct_V_mat_fast(V_hartree, C, C_vec_hartree, basis, atoms, Ng, L, num_electrons, grid, whole_basis_grid);
     arma::mat V_ext_mat = construct_V_mat_fast(V_ext, C, C_vec_ext, basis, atoms, Ng, L, num_electrons, grid, whole_basis_grid);
+    arma::mat V_hartree_mat = construct_V_mat_fast(V_hartree, C, C_vec_hartree, basis, atoms, Ng, L, num_electrons, grid, whole_basis_grid);
     arma::mat V_xc_mat = construct_V_mat_fast(V_xc, C, C_vec_hartree, basis, atoms, Ng, L, num_electrons, grid, whole_basis_grid);
 
-    return T_mat + V_hartree_mat + V_ext_mat + V_xc_mat;
+    return T_mat + V_ext_mat + V_hartree_mat + V_xc_mat;
 
 }
 

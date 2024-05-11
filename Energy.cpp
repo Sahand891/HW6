@@ -65,7 +65,7 @@ double hartree_energy(const iteration_data &final_it_data) {
     std::vector<Atom> atoms = final_it_data.atoms;
     int p = final_it_data.p;
     int q = final_it_data.q;
-    arma::vec C_vec_hartree = final_it_data.C_vec_hartree;
+    arma::vec C_vec_hartree = final_it_data.C_vec_hartree_new;
 
     arma::mat C_alpha = final_it_data.C_alpha_new;
     arma::mat C_beta = final_it_data.C_beta_new;
@@ -82,7 +82,7 @@ double hartree_energy(const iteration_data &final_it_data) {
 }
 
 
-// Still need to adjust this, it will be very slow!
+// Still need to adjust this, it will be very slow! ... or i guess not? runs just fine lol
 double xc_energy(const iteration_data &final_it_data) {
 
     std::vector<PB_wavefunction> basis = final_it_data.basis;
@@ -91,7 +91,7 @@ double xc_energy(const iteration_data &final_it_data) {
     std::vector<Atom> atoms = final_it_data.atoms;
     int p = final_it_data.p;
     int q = final_it_data.q;
-    arma::vec C_vec_hartree = final_it_data.C_vec_hartree;
+    arma::vec C_vec_hartree = final_it_data.C_vec_hartree_new;
     arma::vec C_vec_ext = final_it_data.C_vec_ext;
 
     arma::mat C_alpha = final_it_data.C_alpha_new;

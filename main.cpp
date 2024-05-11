@@ -28,18 +28,18 @@ int main() {
 
 
     arma::mat C(basis.size(), basis.size(), arma::fill::zeros); // make an empty coef matrix just for calculating V_ext
-    arma::vec C_vec = C_V_ext(basis, atoms, L); // make it for the basis, then store it away
+    arma::vec C_vec_ext = C_V_ext(basis, atoms, L); // make it for the basis, then store it away
 //    C_vec.print();
 
 
     arma::sp_mat T = construct_T(basis);
 //    T.print();
-    arma::mat V_ext_mat = construct_V_mat_fast(V_ext, C, C_vec, basis, atoms, Ng, L, p, grid, whole_basis_grid);
+    arma::mat V_ext_mat = construct_V_mat_fast(V_ext, C, C_vec_ext, basis, atoms, Ng, L, p, grid, whole_basis_grid);
 //    V_ext_mat.print();
 
 
-    // Now let's try to do the shitty convergence on this bitch!!!
-    iteration_data initial_itdata = initialize_DFT(basis, Ng, L, atoms, p, q, C_vec, C_vec, C, V_ext_mat, grid, whole_basis_grid);
+    // Now let's try to do the convergence!!!
+    iteration_data initial_itdata = initialize_DFT(basis, Ng, L, atoms, p, q, C_vec_ext, C_vec_ext, C, V_ext_mat, grid, whole_basis_grid);
     std::vector<iteration_data> start_vec = {initial_itdata};
     std::function<arma::mat(std::vector<PB_wavefunction>&, arma::mat&, arma::vec&, arma::vec&, const std::vector<Atom>&, int, double, int, arma::mat&, arma::mat&)> func_wrapper = construct_Fmat_Vext_only;
     std::vector<iteration_data> all_itdata = converge_DFT(initial_itdata, start_vec, func_wrapper);
@@ -50,10 +50,38 @@ int main() {
 //    conv_itdata.C_alpha_new.print();
 //    conv_itdata.C_beta_new.print();
 
-
+    std::cout << "H atom using ONLY T and V_ext:" << std::endl;
     std::cout << "KE: " << kinetic_energy(conv_itdata, T) << std::endl;
     std::cout << "External energy: " << external_energy(conv_itdata) << std::endl;
     std::cout << "Total energy: " << kinetic_energy(conv_itdata, T) + external_energy(conv_itdata) << std::endl;
+
+
+    // Now, trying to add V_hartree and V_xc for the H atom!
+    // Adding in the relevant matrices
+
+    // Initializing the C_vec_hartree vector—this will change every iteratino since C will change, and it is based on the ENTIRE electron density (not just alpha or beta)!
+    arma::vec C_vec_hartree = C_V_hartree(basis, C, C, Ng, L, p, q, grid, whole_basis_grid); // make it for the basis, then store it away
+    arma::mat V_hartree_mat = construct_V_mat_fast(V_hartree, C, C_vec_hartree, basis, atoms, Ng, L, p, grid, whole_basis_grid);
+    arma::mat V_xc_mat = construct_V_mat_fast(V_xc, C, C_vec_hartree, basis, atoms, Ng, L, p, grid, whole_basis_grid);
+
+    arma::mat F_initial = T+V_ext_mat+V_hartree_mat+V_xc_mat;
+
+
+    // Now let's try to do the shitty convergence on this bitch!!!
+    iteration_data initial_itdata_hxc = initialize_DFT(basis, Ng, L, atoms, p, q, C_vec_hartree, C_vec_ext, C, F_initial, grid, whole_basis_grid);
+    std::vector<iteration_data> start_vec_hxc = {initial_itdata};
+    std::function<arma::mat(std::vector<PB_wavefunction>&, arma::mat&, arma::vec&, arma::vec&, const std::vector<Atom>&, int, double, int, arma::mat&, arma::mat&)> func_wrapper_hxc = construct_Fock_matrix;
+    std::vector<iteration_data> all_itdata_hxc = converge_DFT(initial_itdata, start_vec, func_wrapper_hxc);
+    iteration_data conv_itdata_hxc = obtain_converged_data(all_itdata);
+
+
+
+    std::cout << "H atom using ONLY T and V_ext:" << std::endl;
+    std::cout << "KE: " << kinetic_energy(conv_itdata_hxc, T) << std::endl;
+    std::cout << "External energy: " << external_energy(conv_itdata_hxc) << std::endl;
+    std::cout << "Hartree energy: " << hartree_energy(conv_itdata_hxc) << std::endl;
+    std::cout << "Exchange-correlation energy: " << xc_energy(conv_itdata_hxc) << std::endl;
+    std::cout << "Total energy: " << total_energy(conv_itdata_hxc, T) << std::endl;
 
 
     return 0;
