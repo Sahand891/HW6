@@ -104,7 +104,7 @@ std::vector<iteration_data> converge_DFT(const iteration_data &it_data, std::vec
 
 
     // Convergence check
-    bool is_converged = arma::approx_equal(Fock_alpha,Fock_alpha_old,"absdiff",1e-6);
+    bool is_converged = arma::approx_equal(Fock_alpha,Fock_alpha_old,"absdiff",1e-8);
 
 
     // Compile all the appropriate info into a new iteration_data object

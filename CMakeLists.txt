@@ -18,7 +18,9 @@ add_executable(HW6
         Diagonalize_Converge.cpp
         Diagonalize_Converge.h
         Energy.cpp
-        Energy.h)
+        Energy.h
+        Perform_DFT.cpp
+        Perform_DFT.h)
 
 include_directories(/Users/sahandadibnia/armadillo-12.6.7/include)
 
